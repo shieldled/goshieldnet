@@ -1,10 +1,14 @@
 # goshieldnet
 
+[![Documentation](https://img.shields.io/badge/docs-shieldled.github.io%2Fgoshieldnet-blue.svg)](https://shieldled.github.io/goshieldnet/)
 [![CI](https://github.com/shieldled/goshieldnet/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/shieldled/goshieldnet/actions/workflows/ci.yml)
 [![Docs](https://github.com/shieldled/goshieldnet/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/shieldled/goshieldnet/actions/workflows/docs.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/shieldled/goshieldnet.svg)](https://pkg.go.dev/github.com/shieldled/goshieldnet)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/shieldled/goshieldnet/blob/main/LICENSE)
 [![Go version](https://img.shields.io/github/go-mod/go-version/shieldled/goshieldnet)](https://github.com/shieldled/goshieldnet/blob/main/go.mod)
+
+**Documentation: [shieldled.github.io/goshieldnet](https://shieldled.github.io/goshieldnet/)**, with the guides, the API
+reference and the examples.
 
 goshieldnet is the Go implementation of **ShieldNet**, the encrypted protocol
 ShieldLED controllers use to drive LED devices over a network. It provides:

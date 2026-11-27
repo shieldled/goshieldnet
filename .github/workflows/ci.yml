@@ -1,0 +1,90 @@
+# Copyright (c) 2025-2026 BlackShield LDA
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only token: nothing here pushes, comments or publishes.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.26.x'
+          # Latest 1.26 patch, not whatever the runner cached: standard-library
+          # security fixes land in patch releases (govulncheck below).
+          check-latest: true
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Verify formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-clean:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      # The module must build for every controller OS and for 32-bit ARM,
+      # tests included (vet type-checks them); the Windows build also links the
+      # examples, so a Unix-only syscall cannot slip in unnoticed.
+      - name: Cross-build for Windows, macOS and ARM
+        run: |
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go vet ./...
+          CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go vet ./...
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o /dev/null ./examples/client ./examples/server
+          CGO_ENABLED=0 GOOS=darwin go vet ./...
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go vet ./...
+
+      - name: Staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.1 # 2026.2.1
+          staticcheck ./...
+
+      - name: Test (race)
+        run: go test -race ./...
+
+      # Tests that need binaries from other repositories skip here and say so:
+      # the differential and sequence fuzz targets (sn_oracle, sn_state_fuzz)
+      # and the C<->Go / firmware interop tests (TestCDeviceGoClientInterop,
+      # TestGoDeviceCClientInterop, TestFirmwarePingInterop, which take sn_host,
+      # sn_client_host and the firmware host via SN_HOST_BIN, SN_CLIENT_HOST_BIN
+      # and SLED_HOST_BIN). They run in libshieldnet's and the firmware's own
+      # workflows. This step lists each skip and its reason so a green run does
+      # not imply they executed.
+      - name: Report tests that did not run
+        run: |
+          go test ./v1/ -run 'Fuzz|Interop' -v 2>&1 \
+            | grep -E -B1 '^\s*--- SKIP' || true
+
+  vulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.26.x'
+          # Latest 1.26 patch, not whatever the runner cached: standard-library
+          # security fixes land in patch releases (govulncheck below).
+          check-latest: true
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+      - name: Run govulncheck
+        run: govulncheck ./...

@@ -1,0 +1,39 @@
+{
+  "_comment": "ShieldLED sled golden vectors and kind numbering, extracted from spec/application.md (sections 10.1, 10.2 and Appendix A) in the shieldnet-protocol repository. The spec is authoritative; update this file when it changes.",
+  "commands": {
+    "PIXEL_FRAME": "0x00",
+    "SET_BRIGHTNESS": "0x01",
+    "SET_FPS": "0x02",
+    "SET_MODE": "0x04",
+    "ON": "0x05",
+    "OFF": "0x06",
+    "PING": "0x07",
+    "GET_STATUS": "0x08",
+    "GET_MODE": "0x09",
+    "GET_DEVICE_INFO": "0x0a",
+    "NTP_SERVER": "0x0b"
+  },
+  "responses": {
+    "ACK": "0x80",
+    "STATUS": "0x81",
+    "DEVICE_INFO": "0x84"
+  },
+  "vectors": [
+    "000000000000000117979cfe3d85cd1517979cfe3e1e63950000000401020304",
+    "0404007b0a000005",
+    "04041fbbc0a8010a",
+    "010a007b74696d652e6c6f63616c",
+    "0610007bfd000000000000000000000000000001",
+    "0201000001020304050607080016667073206f7574206f662072616e676520312d323535",
+    "0102030405060708111213141516171821222324252627283132333401010100a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacb901e",
+    "01020304050607081112131415161718212223242526272831323334010101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000901e",
+    "08656e76656c6f7065053332373638067374726970730134046c656473043130323403627070013305706978656c00",
+    "08656e76656c6f7065053332373638067374726970730134046c656473043130323403627070013305706978656c000370747300"
+  ],
+  "core_table_vectors": {
+    "_comment": "spec/application.md Appendix A.6, transcribed by hand; the spec is authoritative. These are shorter than the 8 hex digits the vectors list holds.",
+    "SET_BRIGHTNESS": "80",
+    "SET_MODE": "01",
+    "GET_MODE_DETAIL": "0101"
+  }
+}

@@ -1,0 +1,65 @@
+# Copyright (c) 2025-2026 BlackShield LDA
+# SPDX-License-Identifier: Apache-2.0
+name: Security
+
+# A CycloneDX SBOM of the module and every module it requires, scanned for
+# known vulnerabilities with Grype (a high or critical finding fails the run).
+# It runs on every change and weekly, so an advisory published after the last
+# commit still fails a run; the weekly run also repeats govulncheck. The SBOM
+# is kept as the run's `sbom` artifact. Locally:
+#   cyclonedx-gomod mod -licenses -json -output sbom.cdx.json .
+#   grype sbom:sbom.cdx.json
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: SBOM + vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CYCLONEDX_GOMOD_VERSION: 1.9.0
+      CYCLONEDX_GOMOD_SHA256: e6d3b3a409b1c84ccef79ad15f9127d80c430a92d5c4f9e621bc2f0f3ee6d423
+      GRYPE_VERSION: 0.116.0
+      GRYPE_SHA256: 40aff724297312f91ea390d003bed8d8651c74cc7f5b26732db80b3a408d2fc5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: '1.26.x'
+          check-latest: true
+      - name: Install cyclonedx-gomod and Grype (checksum-pinned release binaries)
+        run: |
+          set -eu
+          bin="$RUNNER_TEMP/bin"; mkdir -p "$bin"
+          fetch() { # name url sha256
+            curl -fsSL -o "$RUNNER_TEMP/$1.tar.gz" "$2"
+            echo "$3  $RUNNER_TEMP/$1.tar.gz" | sha256sum -c -
+            tar -xzf "$RUNNER_TEMP/$1.tar.gz" -C "$bin" "$1"
+          }
+          fetch cyclonedx-gomod "https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v${CYCLONEDX_GOMOD_VERSION}/cyclonedx-gomod_${CYCLONEDX_GOMOD_VERSION}_linux_amd64.tar.gz" "$CYCLONEDX_GOMOD_SHA256"
+          fetch grype "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz" "$GRYPE_SHA256"
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: SBOM (CycloneDX 1.6)
+        run: cyclonedx-gomod mod -licenses -json -output sbom.cdx.json .
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom.cdx.json
+      - name: Grype
+        run: grype sbom:sbom.cdx.json -o table --fail-on high
+      - name: govulncheck (weekly)
+        if: github.event_name == 'schedule'
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+          govulncheck ./...

@@ -53,7 +53,14 @@ Out of scope:
 - deployments that ignore documented requirements, such as a device holding
   the PSK.
 
+## Dependencies and SBOM
+
+Every change, every tag and a weekly run produce a CycloneDX SBOM of the module
+and every module it requires (the `sbom` artifact of the Security workflow) and
+scan it for known vulnerabilities with Grype; a high or critical finding fails
+the run. govulncheck, which reports only the vulnerabilities this code can
+reach, runs on every change and in the weekly run.
+
 ## Supported versions
 
-Security fixes go into the latest minor release. Before 1.0, a fix may need an
-upgrade to that release rather than a patch to an older one.
+Security fixes go into the latest 1.x release.

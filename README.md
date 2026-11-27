@@ -255,6 +255,10 @@ including its `DEVICE_INFO` wait.
 `discovery.DiscoverAll` lists devices with an IPv4 address;
 `discovery.DiscoverAllWith(timeout, discovery.Options{IPv6: true})` also lists
 IPv6-only ones (a link-local `Found.Host` carries its `%zone`).
+Both browse `discovery.ServiceTypes` (`_sled_x1._udp`, `_sled_l1._udp`,
+`_sled_s1._udp`); a device of your own that announces another type is found with
+`discovery.Options{Services: []string{"_acme-led._udp"}}`, which browses exactly
+the types named.
 
 Discovery's answers arrive as unicast to an ephemeral port, so a host firewall
 must accept inbound UDP from LAN source port 5353.

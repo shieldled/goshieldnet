@@ -28,7 +28,8 @@ Go 1.26.5 or newer. Packages:
   Entry points:
   - client: `sledclient.Dial`, `Options`, the typed methods (`Status`,
     `SetBrightness`, `SetMode`, ...), `Do` and `DoExtension`;
-  - discovery: `discovery.DiscoverAll`, `Found`;
+  - discovery: `discovery.DiscoverAll`, `DiscoverAllWith` (`Options.Services`
+    for custom service types), `Found`;
   - device: `v1.NewDeviceFromKDev`, `v1.NewServer`, `(*v1.Server).Serve`,
     `RecvAppNumGen`, `SendAppPadded`, with `sled.EncodeAck` and the other
     `sled` encoders for the answers;

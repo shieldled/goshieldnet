@@ -11,6 +11,7 @@ package discovery
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -24,10 +25,16 @@ import (
 	"github.com/shieldled/goshieldnet/sledclient"
 )
 
-// ServiceTypes are the mDNS service types sled devices advertise.
-// _sled_x1._udp is reserved by spec/application.md section 8; it is browsed for this
-// project's host agents, which advertise it.
+// ServiceTypes are the mDNS service types sled devices advertise, and the ones
+// DiscoverAll browses. _sled_x1._udp is reserved by spec/application.md section 8;
+// it is browsed for this project's host agents, which advertise it. To browse
+// other types, such as a custom device's own, set Options.Services rather than
+// changing this variable.
 var ServiceTypes = []string{"_sled_x1._udp", "_sled_l1._udp", "_sled_s1._udp"}
+
+// ErrBadService is returned, wrapped, by DiscoverAllWith for an Options.Services
+// entry that is not of the form "_<name>._udp".
+var ErrBadService = errors.New("discovery: bad service type")
 
 // Found is one device seen on the network.
 type Found struct {
@@ -61,10 +68,21 @@ type Options struct {
 	// IPv6 also queries over IPv6, on interfaces with any unicast address, and
 	// lists a device that has only an IPv6 address (Found.Host).
 	IPv6 bool
+
+	// Services, when not empty, are the mDNS service types to browse instead of
+	// ServiceTypes, such as a custom device's own: each "_<name>._udp" without
+	// ".local", the name 1 to 15 letters, digits, '-' or '_'. Found.Service is
+	// the entry a device was found under. A malformed entry makes DiscoverAllWith
+	// return an error wrapping ErrBadService before anything is sent.
+	Services []string
 }
 
 // DiscoverAllWith is DiscoverAll with options.
 func DiscoverAllWith(timeout time.Duration, opts Options) ([]Found, error) {
+	services, err := servicesFor(opts)
+	if err != nil {
+		return nil, err
+	}
 	ifaces := queryInterfaces(opts.IPv6)
 
 	var (
@@ -117,7 +135,7 @@ func DiscoverAllWith(timeout time.Duration, opts Options) ([]Found, error) {
 		}
 	}
 
-	for _, service := range ServiceTypes {
+	for _, service := range services {
 		if len(ifaces) == 0 {
 			wg.Add(1)
 			go query(service, nil)
@@ -135,6 +153,41 @@ func DiscoverAllWith(timeout time.Duration, opts Options) ([]Found, error) {
 		return nil, errors.Join(errs...)
 	}
 	return out, nil
+}
+
+// servicesFor returns the service types opts browses: opts.Services when it is
+// not empty, each checked by validService, else ServiceTypes.
+func servicesFor(opts Options) ([]string, error) {
+	if len(opts.Services) == 0 {
+		return ServiceTypes, nil
+	}
+	for _, s := range opts.Services {
+		if !validService(s) {
+			return nil, fmt.Errorf("%w %q: want _<name>._udp, the name 1 to 15 letters, digits, '-' or '_'", ErrBadService, s)
+		}
+	}
+	return opts.Services, nil
+}
+
+// validService reports whether s is "_<name>._udp" (the suffix in any letter
+// case), the name 1 to 15 letters, digits, '-' or '_': RFC 6335's length, with
+// '_' because the sled types use it.
+func validService(s string) bool {
+	const suffix = "._udp"
+	if len(s) < 1+len(suffix) || s[0] != '_' || !strings.EqualFold(s[len(s)-len(suffix):], suffix) {
+		return false
+	}
+	name := s[1 : len(s)-len(suffix)]
+	if len(name) < 1 || len(name) > 15 {
+		return false
+	}
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // queryInterfaces returns the up, running, multicast-capable, non-loopback

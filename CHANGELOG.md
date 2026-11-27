@@ -4,6 +4,15 @@ All notable changes to **goshieldnet** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-27
+
+### Added
+
+- `discovery.Options.Services`: browse the mDNS service types the application
+  names, such as a custom device's own (`_<name>._udp`), instead of
+  `ServiceTypes`. A malformed entry fails with `ErrBadService` before anything
+  is sent. The zero value browses `ServiceTypes` as before.
+
 ## [1.0.1] - 2026-11-27
 
 ### Added
@@ -39,5 +48,6 @@ First public release: the Go reference implementation of ShieldNet v1
   examples, `llms.txt` / `llms-full.txt`, `AGENTS.md`, `SECURITY.md` and
   `NOTICE`.
 
+[1.1.0]: https://github.com/shieldled/goshieldnet/releases/tag/v1.1.0
 [1.0.1]: https://github.com/shieldled/goshieldnet/releases/tag/v1.0.1
 [1.0.0]: https://github.com/shieldled/goshieldnet/releases/tag/v1.0.0
